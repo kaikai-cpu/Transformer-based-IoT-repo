@@ -12,6 +12,7 @@ import numpy as np
 
 from preprocess_nsl import load_nsl_kdd
 from preprocess_cicids import load_cicids_data
+from preprocess_amazon import load_amazon_data
 from transformer_model import TransformerClassifier
 
 def train_and_evaluate(dataset_name, load_data_fn):
@@ -26,9 +27,9 @@ def train_and_evaluate(dataset_name, load_data_fn):
 
     # Tensors
     X_train_tensor = torch.tensor(X_train, dtype=torch.float32)
-    y_train_tensor = torch.tensor(y_train.values if hasattr(y_train, "values") else y_train, dtype=torch.long)
+    y_train_tensor = torch.tensor(y_train if isinstance(y_train, np.ndarray) else y_train.values, dtype=torch.long)
     X_test_tensor = torch.tensor(X_test, dtype=torch.float32)
-    y_test_tensor = torch.tensor(y_test.values if hasattr(y_test, "values") else y_test, dtype=torch.long)
+    y_test_tensor = torch.tensor(y_test if isinstance(y_test, np.ndarray) else y_test.values, dtype=torch.long)
 
     # DataLoaders
     batch_size = 64
@@ -122,37 +123,20 @@ def train_and_evaluate(dataset_name, load_data_fn):
     plt.savefig(os.path.join(results_dir, "confusion_matrix.png"))
     plt.close()
 
-    # Loss Curve
-    plt.plot(range(1, epochs + 1), train_losses, label="Training Loss", marker="o")
-    plt.title(f"Loss Curve - {dataset_name.upper()}")
-    plt.xlabel("Epoch")
-    plt.ylabel("Loss")
-    plt.grid()
-    plt.savefig(os.path.join(results_dir, "loss_curve.png"))
-    plt.close()
-
-    # Accuracy Curve
-    plt.plot(range(1, epochs + 1), train_accuracies, label="Training Accuracy", marker="o", color="green")
-    plt.title(f"Accuracy Curve - {dataset_name.upper()}")
-    plt.xlabel("Epoch")
-    plt.ylabel("Accuracy")
-    plt.grid()
-    plt.savefig(os.path.join(results_dir, "accuracy_curve.png"))
-    plt.close()
-
     # ROC Curve
     fpr, tpr, _ = roc_curve(all_labels, all_probs)
-    plt.plot(fpr, tpr, label=f"AUC = {auc:.4f}")
-    plt.plot([0, 1], [0, 1], linestyle="--")
+    plt.plot(fpr, tpr, label=f'ROC curve (area = {auc:.2f})')
+    plt.plot([0, 1], [0, 1], 'k--')
     plt.xlabel("False Positive Rate")
     plt.ylabel("True Positive Rate")
     plt.title(f"ROC Curve - {dataset_name.upper()}")
-    plt.legend()
-    plt.grid()
+    plt.legend(loc="lower right")
     plt.savefig(os.path.join(results_dir, "roc_curve.png"))
     plt.close()
 
 if __name__ == "__main__":
+    train_and_evaluate("amazon1", lambda: load_amazon_data("amazon1"))
+    train_and_evaluate("amazon2", lambda: load_amazon_data("amazon2"))
+    train_and_evaluate("amazon3", lambda: load_amazon_data("amazon3"))
     train_and_evaluate("nsl_kdd", load_nsl_kdd)
     train_and_evaluate("cicids", load_cicids_data)
-
